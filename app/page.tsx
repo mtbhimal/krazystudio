@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
@@ -9,15 +11,23 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import { prisma } from "@/lib/prisma";
 
-// Server component: runs on the server at request time, so it can read straight
-// from the database and hand the results down as props. This is what makes the
-// CMS "live" — whatever the owner uploads/edits in /admin shows up here.
 export default async function HomePage() {
-  const [portfolioTracks, galleryImages, approvedReviews] = await Promise.all([
-    prisma.portfolio.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
-    prisma.galleryImage.findMany({ orderBy: { createdAt: "desc" }, take: 9 }),
-    prisma.review.findMany({ where: { approved: true }, orderBy: { createdAt: "desc" }, take: 9 })
-  ]);
+  let portfolioTracks: any[] = [];
+  let galleryImages: any[] = [];
+  let approvedReviews: any[] = [];
+
+  try {
+    const [portfolio, gallery, reviews] = await Promise.all([
+      prisma.portfolio.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
+      prisma.galleryImage.findMany({ orderBy: { createdAt: "desc" }, take: 9 }),
+      prisma.review.findMany({ where: { approved: true }, orderBy: { createdAt: "desc" }, take: 9 })
+    ]);
+    portfolioTracks = portfolio;
+    galleryImages = gallery;
+    approvedReviews = reviews;
+  } catch (error) {
+    console.error("Failed to fetch homepage data from database:", error);
+  }
 
   return (
     <>
@@ -27,8 +37,6 @@ export default async function HomePage() {
         <Hero />
         <About />
         <Services />
-        {/* Each component keeps its own hard-coded fallback content, so the homepage
-            still looks complete on a brand-new install before you've uploaded anything. */}
         <Portfolio items={portfolioTracks.length > 0 ? portfolioTracks : undefined} />
         <Gallery
           images={
