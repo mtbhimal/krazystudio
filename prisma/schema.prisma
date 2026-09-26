@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  password  String
+  role      Role      @default(CUSTOMER)
+  createdAt DateTime  @default(now())
+  bookings  Booking[]
+  reviews   Review[]
+}
+
+model Service {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String
+  price       Int?
+  duration    Int
+  icon        String?
+  createdAt   DateTime  @default(now())
+  bookings    Booking[]
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  name            String
+  email           String
+  phone           String
+  serviceId       String
+  userId          String?
+  appointmentDate DateTime
+  appointmentTime String
+  message         String?
+  status          BookingStatus @default(PENDING)
+  // Lets the client open a private status/message page without needing to log in.
+  // Generated once when the booking is created, then put into the confirmation email link.
+  accessToken     String        @unique @default(cuid())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  service         Service       @relation(fields: [serviceId], references: [id])
+  user            User?         @relation(fields: [userId], references: [id])
+  messages        Message[]
+
+  @@index([appointmentDate, appointmentTime])
+}
+
+// One row per chat bubble in the Admin <-> Client thread for a booking.
+model Message {
+  id        String        @id @default(cuid())
+  bookingId String
+  sender    MessageSender
+  body      String
+  readByAdmin  Boolean    @default(false)
+  readByClient Boolean    @default(false)
+  createdAt DateTime      @default(now())
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+}
+
+enum MessageSender {
+  ADMIN
+  CLIENT
+  SYSTEM
+}
+
+model Portfolio {
+  id            String   @id @default(cuid())
+  title         String
+  artist        String
+  genre         String?
+  description   String?
+  audioUrl      String
+  coverImageUrl String
+  createdAt     DateTime @default(now())
+}
+
+model GalleryImage {
+  id        String   @id @default(cuid())
+  title     String?
+  imageUrl  String
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  rating    Int
+  comment   String
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}

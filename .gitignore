@@ -1,0 +1,11 @@
+node_modules
+.next
+.env
+.env.local
+*.log
+.DS_Store
+
+# Uploaded CMS files (images/audio) are user data, not source code — don't commit them.
+/public/uploads/*
+!/public/uploads/*/.gitkeep
+
